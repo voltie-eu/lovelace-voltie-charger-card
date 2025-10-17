@@ -8,9 +8,7 @@ A beautiful custom [Lovelace](https://www.home-assistant.io/lovelace/) card for 
 
 - 🧩 Easy installation via [HACS](https://hacs.xyz)
 - ⚡ Modern, responsive UI
-- 🎨 Customizable design and layout
 - 🧠 Lightweight — no external dependencies
-- 🌙 Works with both light and dark themes
 
 ---
 
