@@ -54,7 +54,7 @@ class VoltieChargerCard extends HTMLElement {
           <div style="height: 24px"></div>
           <p style="font-size: 16px; font-weight: 600; width: 100%; text-align: center; margin: 0px; color: #181C32;">Offline</p>
           <div style="height: 24px"></div>
-          <img src="/local/voltie-charger-card-icons/Offline.svg" style="width:40%; margin-left: 30%;" />
+          <img src="/local/community/lovelace-voltie-charger-card/voltie-charger-card-icons/Offline.svg" style="width:40%; margin-left: 30%;" />
           <div style="height: 24px"></div>
         </div>
       </ha-card>
@@ -69,7 +69,7 @@ class VoltieChargerCard extends HTMLElement {
           <p style="font-size: 16px; font-weight: 600; width: 100%; text-align: center; margin: 0px; color: #FFFFFF;">Online</p>
           <p style="font-size: 14px; font-weight: 500; width: 100%; text-align: center; margin: 0px; color: #FFFFFF;">Car not connected</p>
           <div style="height: 24px"></div>
-          <img src="/local/voltie-charger-card-icons/Online.svg" style="width:40%; margin-left: 30%;" />
+          <img src="/local/community/lovelace-voltie-charger-card/voltie-charger-card-icons/Online.svg" style="width:40%; margin-left: 30%;" />
           <div style="height: 24px"></div>
           <div id="powerDetailsSection"></div>
           <p class="chargerIdLabel">${(chargerIdValue.state || '-').slice(-4)}</p>
@@ -85,7 +85,7 @@ class VoltieChargerCard extends HTMLElement {
           <div style="height: 24px"></div>
           <p style="font-size: 16px; font-weight: 600; width: 100%; text-align: center; margin: 0px; color: #FFFFFF;">Car plugged in</p>
           <div style="height: 24px"></div>
-          <img src="/local/voltie-charger-card-icons/Online.svg" style="width: 40%; margin-left: 30%;" />
+          <img src="/local/community/lovelace-voltie-charger-card/voltie-charger-card-icons/Online.svg" style="width: 40%; margin-left: 30%;" />
           <div style="height: 24px"></div>
           <div class="slider-container">
             <input type="range" id="slider" min="0" max="100" value="0" style="background: linear-gradient(90deg, rgb(42, 111, 244) 0%, rgb(86, 242, 223) 100%);" />
@@ -121,7 +121,7 @@ class VoltieChargerCard extends HTMLElement {
           <div style="height: 24px"></div>
           <p style="font-size: 16px; font-weight: 600; width: 100%; text-align: center; margin: 0px; color: #FFFFFF;">Charging</p>
           <div style="height: 24px"></div>
-          <img src="/local/voltie-charger-card-icons/Charging.svg" style="width: 40%; margin-left: 30%;" />
+          <img src="/local/community/lovelace-voltie-charger-card/voltie-charger-card-icons/Charging.svg" style="width: 40%; margin-left: 30%;" />
           <div style="height: 24px"></div>
           <div class="slider-container">
             <input type="range" id="slider" min="0" max="100" value="0" style="background: linear-gradient(90deg, rgb(42, 111, 244) 0%, rgb(226, 89, 75) 100%);" />
@@ -157,7 +157,7 @@ class VoltieChargerCard extends HTMLElement {
           <div style="height: 16px"></div>
           <p style="font-size: 14px; font-weight: 600; width: 100%; text-align: center; margin: 0px; color: #FFFFFF;">Online</p>
           <div style="height: 16px"></div>
-          <img src="/local/voltie-charger-card-icons/Error.svg" style="width:40%; margin-left: 30%;" />
+          <img src="/local/community/lovelace-voltie-charger-card/voltie-charger-card-icons/Error.svg" style="width:40%; margin-left: 30%;" />
           <div style="height: 16px"></div>
           <div id="powerDetailsSection"></div>
           <p class="chargerIdLabel">${(chargerIdValue.state || '-').slice(-4)}</p>
