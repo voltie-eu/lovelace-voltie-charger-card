@@ -1,6 +1,6 @@
-# 💫 Custom Lovelace Card — Voltie Charger
+# 💫 Lovelace Card — Voltie Charger
 
-A beautiful custom [Lovelace](https://www.home-assistant.io/lovelace/) card for [Home Assistant](https://www.home-assistant.io), made to make **monitoring and controlling your Voltie Charger easy**.
+A [Lovelace](https://www.home-assistant.io/lovelace/) card for [Home Assistant](https://www.home-assistant.io), made to make **monitoring and controlling your Voltie Charger easy**.
 
 ---
 
