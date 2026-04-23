@@ -7,8 +7,6 @@ Lovelace card for the Voltie Charger Home Assistant integration.
 
 Requires [voltie-eu/homeassistant-voltie_charger](https://github.com/voltie-eu/homeassistant-voltie_charger).
 
-![](images/charging.png)
-
 ## Features
 
 - Status panel with state-dependent colors and illustrations (offline, idle, plugged in, charging, fault).
@@ -18,34 +16,30 @@ Requires [voltie-eu/homeassistant-voltie_charger](https://github.com/voltie-eu/h
 - Fault messages for documented EVSE error codes.
 - Visual editor.
 
-## Screenshots
-
-| Ready | Charging | Fault |
-| :---: | :---: | :---: |
-| ![](images/ready.png) | ![](images/charging.png) | ![](images/fault.png) |
-
-## Installation
+## Installation 📦
 
 HACS is the recommended way — it handles updates for you.
 
-### HACS (recommended)
+1. Open **HACS** in the sidebar.
+2. Open the **⋮** menu → **Custom repositories**.
+3. Fill in the dialog:
+   - **Repository:** `https://github.com/voltie-eu/lovelace-voltie-charger-card`
+   - **Type:** **Dashboard**
+4. Click **Add**.
+5. Search for `Voltie Charger Card`, click the result, click **Download**.
+6. Confirm the latest version and click **Download** again.
+7. Hard-refresh the browser (⌘/Ctrl + Shift + R).
 
-1. **HACS → Frontend → ⋮ → Custom repositories**.
-2. Add `https://github.com/voltie-eu/lovelace-voltie-charger-card` with category **Dashboard**.
-3. Install **Voltie Charger Card** and hard-refresh your browser.
-
-[![Open your Home Assistant instance and add this repo to HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=voltie-eu&repository=lovelace-voltie-charger-card&category=plugin)
-
-### Manual
-
-1. Download `voltie-charger-card.js` from the [latest release](https://github.com/voltie-eu/lovelace-voltie-charger-card/releases).
-2. Copy into `config/www/voltie_charger_card/` on your Home Assistant instance.
-3. **Settings → Dashboards → ⋮ → Resources → Add resource**, URL `/local/voltie_charger_card/voltie-charger-card.js`, type **JavaScript Module**.
-4. Hard-refresh your browser.
+No Home Assistant restart is needed for cards.
 
 ## Adding the card
 
-**Add Card → By card → Voltie Charger**, then pick a device.
+1. Open the dashboard where you want the card.
+2. Click **Edit dashboard** in the top right corner.
+3. Select where you want to add the card.
+4. Search for `Voltie` and pick **Voltie Charger**.
+5. Select your charger in the **Voltie Charger device** dropdown.
+6. Click **Save**, then **Done** to exit edit mode.
 
 ## Configuration
 
@@ -73,7 +67,7 @@ npm install
 npm run build
 ```
 
-## Troubleshooting
+## Troubleshooting 🛠️
 
 **"Choose a charger".** The card has no device selected. Open the card editor and pick one.
 
