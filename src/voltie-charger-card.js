@@ -580,8 +580,15 @@ class VoltieChargerCard extends LitElement {
       if (switchId) {
         // Flip the UI optimistically — the charger takes several seconds
         // before its state change propagates back through the integration.
-        this._pendingToggle = this._cardState === "charging" ? "stop" : "start";
-        this.hass.callService("switch", "toggle", { entity_id: switchId });
+        // Send the explicit intent (not toggle): if the backend state moved
+        // between render and commit, toggle could flip the wrong way.
+        const intent = this._cardState === "charging" ? "stop" : "start";
+        this._pendingToggle = intent;
+        this.hass.callService(
+          "switch",
+          intent === "start" ? "turn_on" : "turn_off",
+          { entity_id: switchId }
+        );
         this._scheduleOptimisticResync();
       }
     }
