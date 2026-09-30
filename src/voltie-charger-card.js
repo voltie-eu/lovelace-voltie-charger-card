@@ -5,6 +5,7 @@ import {
   fetchEntityRegistry,
   resolveFromRegistry,
   findVoltieDevices,
+  getChargerId,
   getDeviceName,
 } from "./entity-resolver.js";
 import {
@@ -164,7 +165,8 @@ class VoltieChargerCard extends LitElement {
           this._registryRetryAttempt = 0;
           this._entities = resolveFromRegistry(
             registry,
-            this._config?.device_id
+            this._config?.device_id,
+            getChargerId(this.hass, this._config?.device_id)
           );
           this._cardState = this._computeCardState();
           this.requestUpdate();
@@ -292,7 +294,8 @@ class VoltieChargerCard extends LitElement {
     if (changed.has("hass") || changed.has("_config")) {
       this._entities = resolveFromRegistry(
         this._registry,
-        this._config.device_id
+        this._config.device_id,
+        getChargerId(this.hass, this._config.device_id)
       );
       this._clearPendingToggleIfRealMatches();
       this._cardState = this._computeCardState();
@@ -718,8 +721,9 @@ class VoltieChargerCard extends LitElement {
   }
 
   _renderChargerId() {
-    // Extract the MAC-derived hex suffix the integration puts on the device
-    // name (e.g. "Voltie Charger fbe1") — cheap visual fingerprint.
+    // Extract the hex suffix the integration puts on the device name (e.g.
+    // "Voltie Charger fbe1"), the last 4 characters of the charger ID — cheap
+    // visual fingerprint.
     const name = getDeviceName(this.hass, this._config.device_id);
     const match = name && name.match(/([0-9a-f]{4})\s*$/i);
     if (match) {

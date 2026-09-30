@@ -7,6 +7,8 @@ Lovelace card for the Voltie Charger Home Assistant integration.
 
 Requires [voltie-eu/homeassistant-voltie_charger](https://github.com/voltie-eu/homeassistant-voltie_charger).
 
+Works with every release of the integration. Integration v0.4.0 and later key their entities to the charger ID, which needs this card at v0.4.0 or newer.
+
 ## Features
 
 - Status panel with state-dependent colors and illustrations (offline, idle, plugged in, charging, fault).
@@ -74,6 +76,8 @@ npm run build
 **"Can't reach Home Assistant's entity registry".** WebSocket hiccup; the card retries. If it sticks, reload the page.
 
 **Card shows "offline" but the charger is online.** Check `switch.<name>_charging` in **Developer Tools → States**. If it's `unavailable`, the integration is the issue, not the card.
+
+**Card shows "offline" right after updating the integration.** Update this card to v0.4.0 or newer and hard-refresh the browser. Older cards cannot find the entities of integration v0.4.0 and later.
 
 ## License
 

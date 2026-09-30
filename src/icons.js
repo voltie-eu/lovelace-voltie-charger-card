@@ -26,6 +26,14 @@ export const FAULT_HINTS = {
     "Grid voltage is too high. Wait for it to stabilize; if it persists, call your electrician or utility.",
   undervoltage:
     "Grid voltage is too low. Wait for it to stabilize; if it persists, check your supply or call an electrician.",
+  mid_meter_missing:
+    "The charger cannot find its MID meter and will not charge without it. Have the meter's connection checked by an electrician or Voltie service.",
+  power_board_unknown:
+    "The charger could not identify its power board. Power-cycle the charger; if it persists, service is needed.",
+  shutdown:
+    "The charger's controller has shut down. Power-cycle the charger; if it persists, service is needed.",
+  pe_n_fault:
+    "Excess voltage between protective earth and neutral. Do not use the charger until an electrician has checked the installation.",
   error:
     "The charger reported an error. Inspect the charger's display or app for details.",
 };

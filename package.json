@@ -1,6 +1,6 @@
 {
   "name": "voltie-charger-card",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "description": "Lovelace card for the Voltie Charger integration",
   "private": true,
   "type": "module",
