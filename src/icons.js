@@ -34,12 +34,14 @@ export const FAULT_HINTS = {
     "The charger's controller has shut down. Power-cycle the charger; if it persists, service is needed.",
   pe_n_fault:
     "Excess voltage between protective earth and neutral. Do not use the charger until an electrician has checked the installation.",
-  error:
-    "The charger reported an error. Inspect the charger's display or app for details.",
 };
 
-// Card-state fault triggers (the "error" catch-all is excluded so undocumented
-// firmware codes don't paint the card red).
-export const FAULT_STATES = new Set(
-  Object.keys(FAULT_HINTS).filter((k) => k !== "error")
-);
+// Shown when the fault has no specific hint: the charger reports a code the
+// integration does not know (evse_state is then "unknown"), or an older
+// integration release reports it as "error".
+export const GENERIC_FAULT_HINT =
+  "The charger reported an error. Inspect the charger's display or app for details.";
+
+// Fallback fault triggers for integration releases without the problem
+// binary sensor (key "problem"), which newer releases use to flag faults.
+export const FAULT_STATES = new Set(Object.keys(FAULT_HINTS));

@@ -1,0 +1,61 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # HACS serves the committed dist/ as-is, so it must match the source.
+      - name: Committed bundle matches the source
+        run: git diff --exit-code -- dist/
+
+  release-asset:
+    # Home Assistant's built-in Marketplace and HACS both prefer a release
+    # asset named like hacs.json's "filename" over the committed dist/.
+    if: github.event_name == 'release'
+    needs: bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Committed bundle matches the source
+        run: git diff --exit-code -- dist/
+      # The bundle prints package.json's version in the browser console.
+      - name: Release tag matches the package version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [ "${TAG#v}" != "$version" ]; then
+            echo "::error::Tag $TAG does not match package.json version $version"
+            exit 1
+          fi
+      - name: Upload the bundle to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" dist/voltie-charger-card.js --clobber

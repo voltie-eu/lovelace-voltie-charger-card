@@ -288,6 +288,16 @@ export const cardStyles = css`
     opacity: 0.9;
   }
   .phase-grid__label { text-align: left; font-weight: 500; opacity: 0.85; }
+  /* Fallback while the per-phase sensors are disabled: label, value. */
+  .phase-grid--totals { grid-template-columns: auto 1fr; }
+
+  .drawer-note {
+    margin: 8px 0 0;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
 
   .aux-grid {
     display: grid;

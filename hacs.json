@@ -1,5 +1,6 @@
 {
   "name": "Voltie Charger Card",
   "filename": "voltie-charger-card.js",
+  "homeassistant": "2025.1.0",
   "render_readme": true
 }

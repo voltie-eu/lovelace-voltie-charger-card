@@ -12,14 +12,16 @@ import {
   formatCurrent,
   formatDuration,
   formatEnergy,
+  formatNumber,
   formatPower,
   formatVoltage,
   numericState,
   stringState,
   entityAvailable,
+  hasState,
   readNumericWithStale,
 } from "./format.js";
-import { FAULT_HINTS, FAULT_STATES } from "./icons.js";
+import { FAULT_HINTS, FAULT_STATES, GENERIC_FAULT_HINT } from "./icons.js";
 
 import OnlineSvg from "./illustrations/Online.svg";
 import OfflineSvg from "./illustrations/Offline.svg";
@@ -54,6 +56,15 @@ const REGISTRY_EVENT_DEBOUNCE_MS = 250;
 
 // Periods drawer
 const PERIODS_DISPLAY_MAX = 10;
+
+// Phase drawer
+const PHASES = [1, 2, 3];
+const PHASE_ROWS = [
+  { key: "voltage", label: "Voltage" },
+  { key: "current", label: "Current" },
+  { key: "power", label: "Power" },
+];
+const NO_VALUE = "\u2014";
 
 class VoltieChargerCard extends LitElement {
   static properties = {
@@ -341,14 +352,15 @@ class VoltieChargerCard extends LitElement {
     if (!id) return;
     const st = this.hass?.states?.[id];
     if (!st) return;
-    const raw = st.attributes?.raw_code;
-    const sig = `${st.state}@${raw}@${st.last_changed || st.last_updated}`;
+    // Integration v0.5.0 dropped the raw_code attribute; the state is enough.
+    const sig = `${st.state}@${st.last_changed || st.last_updated}`;
     if (sig === this._lastEvseSig) return;
     this._lastEvseSig = sig;
     const when = new Date().toLocaleTimeString();
-    const rawPart = raw !== undefined ? `, raw_code=${raw}` : "";
+    const problem = stringState(this.hass, this._entities.problem);
+    const problemPart = problem !== null ? `, problem=${problem}` : "";
     console.log(
-      `[voltie-card] evse_state → "${st.state}"${rawPart} (state_ts ${
+      `[voltie-card] evse_state → "${st.state}"${problemPart} (state_ts ${
         st.last_changed || st.last_updated
       }, local ${when})`
     );
@@ -482,10 +494,8 @@ class VoltieChargerCard extends LitElement {
       return "offline";
     }
 
-    // Every documented fault code is latched per the firmware spec; "error"
-    // stays excluded because that bucket also holds transient transitions.
     const evse = stringState(this.hass, e.evse_state);
-    if (evse && FAULT_STATES.has(evse)) {
+    if (this._isFault(evse)) {
       return "fault";
     }
 
@@ -520,6 +530,17 @@ class VoltieChargerCard extends LitElement {
       }
     }
     return "idle";
+  }
+
+  // The problem binary sensor is the integration's own fault verdict and also
+  // covers codes the card has no name for (evse_state is then "unknown").
+  // Without it (older releases) or while it has no usable state, fall back
+  // to the documented fault states, which are latched per the firmware spec.
+  _isFault(evse) {
+    const problem = stringState(this.hass, this._entities.problem);
+    if (problem === "on") return true;
+    if (problem === "off") return false;
+    return !!evse && FAULT_STATES.has(evse);
   }
 
   _captureLiveSample() {
@@ -785,9 +806,11 @@ class VoltieChargerCard extends LitElement {
   }
 
   _renderFault() {
-    const raw = stringState(this.hass, this._entities.evse_state) ?? "error";
-    const label = this._localizeEvseState() || "Fault";
-    const hint = FAULT_HINTS[raw] ?? FAULT_HINTS.error;
+    // The problem sensor no longer names the fault, so evse_state does. It is
+    // null while "unknown" or "unavailable", which gets the generic texts.
+    const evse = stringState(this.hass, this._entities.evse_state);
+    const label = (evse && this._localizeEvseState()) || "Fault";
+    const hint = FAULT_STATES.has(evse) ? FAULT_HINTS[evse] : GENERIC_FAULT_HINT;
     return html`
       <p class="label">${label}</p>
       <div class="illustration">${unsafeHTML(ErrorSvg)}</div>
@@ -932,12 +955,22 @@ class VoltieChargerCard extends LitElement {
 
   _renderDrawer() {
     if (this._cardState === "offline") return nothing;
-    const hasPhaseData =
-      this._entities.voltage_l1 ||
-      this._entities.current_l1 ||
-      this._entities.power_l1;
+    // Integration v0.5.0 disables the per-phase sensors by default, so each
+    // section only renders what has a state, and the totals stand in for the
+    // per-phase grid when none of it does.
+    const phaseRows = this._phaseRows();
+    const totalRows = phaseRows.length ? [] : this._totalRows();
+    const auxRows = this._auxRows();
     const hasPeriods = this._getSessionPeriods().length > 0;
-    if (!hasPhaseData && !hasPeriods) return nothing;
+
+    const sections = [];
+    if (phaseRows.length) sections.push(this._renderPhaseGrid(phaseRows));
+    else if (totalRows.length) sections.push(this._renderTotals(totalRows));
+    if (auxRows.length) {
+      sections.push(this._renderAuxGrid(auxRows, !phaseRows.length));
+    }
+    if (hasPeriods) sections.push(this._renderPeriods());
+    if (!sections.length) return nothing;
 
     return html`
       <button
@@ -949,21 +982,24 @@ class VoltieChargerCard extends LitElement {
       </button>
       ${this._expanded
         ? html`<div class="drawer-body">
-            ${hasPhaseData ? this._renderPhaseGrid() : nothing}
-            ${hasPhaseData && hasPeriods
-              ? html`<div class="drawer-sep"></div>`
-              : nothing}
-            ${hasPeriods ? this._renderPeriods() : nothing}
+            ${sections.map(
+              (section, i) => html`
+                ${i ? html`<div class="drawer-sep"></div>` : nothing}
+                ${section}
+              `
+            )}
           </div>`
         : nothing}
     `;
   }
 
+  // Integration v0.5.0 dropped the periods attribute: no breakdown then.
   _getSessionPeriods() {
     const id = this._entities.session_energy;
     if (!id) return [];
     const periods = this.hass?.states?.[id]?.attributes?.periods;
-    return Array.isArray(periods) ? periods : [];
+    if (!Array.isArray(periods)) return [];
+    return periods.filter((p) => p && typeof p === "object");
   }
 
   _renderPeriods() {
@@ -1016,88 +1052,158 @@ class VoltieChargerCard extends LitElement {
     `;
   }
 
-  _renderPhaseGrid() {
-    const voltage = (p) =>
-      formatVoltage(
-        numericState(this.hass, this._entities[`voltage_l${p}`]),
-        this.hass
-      ) ?? "—";
-    const current = (p) =>
-      formatCurrent(
-        numericState(this.hass, this._entities[`current_l${p}`]),
-        this.hass,
-        { precision: 1 }
-      ) ?? "—";
-    const power = (p) =>
-      formatPower(
-        numericState(this.hass, this._entities[`power_l${p}`]),
-        this.hass
-      ) ?? "—";
+  // Voltage, current and power rows with at least one phase entity that has
+  // a state. A phase without one shows a placeholder.
+  _phaseRows() {
+    const e = this._entities;
+    const format = {
+      voltage: (v) => formatVoltage(v, this.hass),
+      current: (v) => formatCurrent(v, this.hass, { precision: 1 }),
+      power: (v) => formatPower(v, this.hass),
+    };
+    return PHASE_ROWS.filter(({ key }) =>
+      PHASES.some((p) => hasState(this.hass, e[`${key}_l${p}`]))
+    ).map(({ key, label }) => ({
+      label,
+      cells: PHASES.map(
+        (p) =>
+          format[key](numericState(this.hass, e[`${key}_l${p}`])) ?? NO_VALUE
+      ),
+    }));
+  }
 
-    const dlmValid = stringState(this.hass, this._entities.dlm_valid);
-    const ipmValid = stringState(this.hass, this._entities.ipm_valid);
-    const showDlm = !!this._entities.dlm_current_l1;
-    const showIpm = !!this._entities.ipm_current_l1;
-    const dlm = (p) =>
-      formatCurrent(
-        numericState(this.hass, this._entities[`dlm_current_l${p}`]),
-        this.hass,
-        { precision: 1 }
-      ) ?? "—";
-    const ipm = (p) =>
-      formatCurrent(
-        numericState(this.hass, this._entities[`ipm_current_l${p}`]),
-        this.hass,
-        { precision: 1 }
-      ) ?? "—";
+  // Charger totals, shown instead of the per-phase grid.
+  _totalRows() {
+    const e = this._entities;
+    const rows = [
+      {
+        label: "Voltage",
+        id: e.mains_voltage,
+        format: (v) => formatVoltage(v, this.hass),
+      },
+      {
+        label: "Current",
+        id: e.charge_current,
+        format: (v) => formatCurrent(v, this.hass, { precision: 1 }),
+      },
+      {
+        label: "Power",
+        id: e.charge_power,
+        format: (v) => formatPower(v, this.hass),
+      },
+      {
+        label: "Active phases",
+        id: e.phases_used,
+        format: (v) => formatNumber(v, this.hass, { maximumFractionDigits: 0 }),
+      },
+    ];
+    return rows
+      .filter((r) => hasState(this.hass, r.id))
+      .map((r) => ({
+        label: r.label,
+        value: r.format(numericState(this.hass, r.id)) ?? NO_VALUE,
+      }));
+  }
 
+  // DLM and IPM per-phase currents, when any of them has a state.
+  _auxRows() {
+    const e = this._entities;
+    const rows = [];
+    for (const [prefix, name] of [
+      ["dlm", "DLM"],
+      ["ipm", "IPM"],
+    ]) {
+      const ids = PHASES.map((p) => e[`${prefix}_current_l${p}`]);
+      if (!ids.some((id) => hasState(this.hass, id))) continue;
+      // The *_valid sensors are disabled by default too; skip the verdict.
+      const valid = stringState(this.hass, e[`${prefix}_valid`]);
+      const meta =
+        valid === "on"
+          ? `${name} active`
+          : valid === "off"
+          ? `${name} inactive`
+          : name;
+      rows.push({
+        meta,
+        cells: ids.map(
+          (id) =>
+            formatCurrent(numericState(this.hass, id), this.hass, {
+              precision: 1,
+            }) ?? NO_VALUE
+        ),
+      });
+    }
+    return rows;
+  }
+
+  _phaseSensorsDisabled() {
+    return PHASE_ROWS.some(({ key }) =>
+      PHASES.some((p) => {
+        const id = this._entities[`${key}_l${p}`];
+        return !!id && !hasState(this.hass, id);
+      })
+    );
+  }
+
+  _renderPhaseGrid(rows) {
     return html`
       <div class="phase-grid">
         <span class="phase-grid__label"></span>
-        <span class="phase-grid__header">Phase 1</span>
-        <span class="phase-grid__header">Phase 2</span>
-        <span class="phase-grid__header">Phase 3</span>
-
-        <span class="phase-grid__label">Voltage</span>
-        <span class="phase-grid__cell">${voltage(1)}</span>
-        <span class="phase-grid__cell">${voltage(2)}</span>
-        <span class="phase-grid__cell">${voltage(3)}</span>
-
-        <span class="phase-grid__label">Current</span>
-        <span class="phase-grid__cell">${current(1)}</span>
-        <span class="phase-grid__cell">${current(2)}</span>
-        <span class="phase-grid__cell">${current(3)}</span>
-
-        <span class="phase-grid__label">Power</span>
-        <span class="phase-grid__cell">${power(1)}</span>
-        <span class="phase-grid__cell">${power(2)}</span>
-        <span class="phase-grid__cell">${power(3)}</span>
+        ${PHASES.map(
+          (p) => html`<span class="phase-grid__header">Phase ${p}</span>`
+        )}
+        ${rows.map(
+          (r) => html`
+            <span class="phase-grid__label">${r.label}</span>
+            ${r.cells.map(
+              (c) => html`<span class="phase-grid__cell">${c}</span>`
+            )}
+          `
+        )}
       </div>
-      ${showDlm || showIpm
-        ? html`<div class="drawer-sep"></div>
-            <div class="aux-grid">
-              ${showDlm
-                ? html`
-                    <span class="aux-grid__meta">
-                      DLM ${dlmValid === "on" ? "active" : "inactive"}
-                    </span>
-                    <span class="phase-grid__cell">${dlm(1)}</span>
-                    <span class="phase-grid__cell">${dlm(2)}</span>
-                    <span class="phase-grid__cell">${dlm(3)}</span>
-                  `
-                : nothing}
-              ${showIpm
-                ? html`
-                    <span class="aux-grid__meta">
-                      IPM ${ipmValid === "on" ? "active" : "inactive"}
-                    </span>
-                    <span class="phase-grid__cell">${ipm(1)}</span>
-                    <span class="phase-grid__cell">${ipm(2)}</span>
-                    <span class="phase-grid__cell">${ipm(3)}</span>
-                  `
-                : nothing}
-            </div>`
+    `;
+  }
+
+  _renderTotals(rows) {
+    return html`
+      <div class="phase-grid phase-grid--totals">
+        ${rows.map(
+          (r) => html`
+            <span class="phase-grid__label">${r.label}</span>
+            <span class="phase-grid__cell">${r.value}</span>
+          `
+        )}
+      </div>
+      ${this._phaseSensorsDisabled()
+        ? html`<p class="drawer-note">
+            Per-phase readings are disabled. Enable them on the charger's
+            device page to see each phase.
+          </p>`
         : nothing}
+    `;
+  }
+
+  // withHeader: the phase grid is not shown, so label the columns here.
+  _renderAuxGrid(rows, withHeader) {
+    return html`
+      <div class="aux-grid">
+        ${withHeader
+          ? html`
+              <span class="phase-grid__label"></span>
+              ${PHASES.map(
+                (p) => html`<span class="phase-grid__header">Phase ${p}</span>`
+              )}
+            `
+          : nothing}
+        ${rows.map(
+          (r) => html`
+            <span class="aux-grid__meta">${r.meta}</span>
+            ${r.cells.map(
+              (c) => html`<span class="phase-grid__cell">${c}</span>`
+            )}
+          `
+        )}
+      </div>
     `;
   }
 
@@ -1117,7 +1223,7 @@ if (!window.customCards.find((c) => c.type === CARD_TYPE)) {
     description: "Control and monitor a Voltie EV charger",
     preview: true,
     documentationURL:
-      "https://github.com/voltie-eu/homeassistant-voltie_charger",
+      "https://github.com/voltie-eu/lovelace-voltie-charger-card",
   });
 }
 

@@ -77,6 +77,14 @@ export function stringState(hass, entityId) {
   return st.state;
 }
 
+// True when the entity has a state object at all. Disabled entities (the
+// per-phase sensors are disabled by default) are in the registry but never
+// get one.
+export function hasState(hass, entityId) {
+  if (!entityId) return false;
+  return !!hass?.states?.[entityId];
+}
+
 export function entityAvailable(hass, entityId) {
   if (!entityId) return false;
   const st = hass?.states?.[entityId];
